@@ -65,10 +65,11 @@ pub enum Agent {
     Letta,
     Maki,
     Muse,
+    Codebuddy,
 }
 
 impl Agent {
-    pub const ALL: [Self; 24] = [
+    pub const ALL: [Self; 25] = [
         Self::Pi,
         Self::Claude,
         Self::Codex,
@@ -93,9 +94,10 @@ impl Agent {
         Self::Letta,
         Self::Maki,
         Self::Muse,
+        Self::Codebuddy,
     ];
 
-    pub const SCREEN_MANIFEST_AGENTS: [Self; 22] = [
+    pub const SCREEN_MANIFEST_AGENTS: [Self; 23] = [
         Self::Pi,
         Self::Claude,
         Self::Codex,
@@ -118,6 +120,7 @@ impl Agent {
         Self::Letta,
         Self::Maki,
         Self::Muse,
+        Self::Codebuddy,
     ];
 }
 
@@ -147,6 +150,7 @@ pub fn agent_label(agent: Agent) -> &'static str {
         Agent::Letta => "letta",
         Agent::Maki => "maki",
         Agent::Muse => "muse",
+        Agent::Codebuddy => "codebuddy",
     }
 }
 
@@ -182,6 +186,7 @@ pub fn interactive_agent_executable(agent: Agent) -> &'static str {
         Agent::Letta => "letta",
         Agent::Maki => "maki",
         Agent::Muse => "muse",
+        Agent::Codebuddy => "cbc",
     }
 }
 
@@ -222,6 +227,7 @@ fn lookup_agent(name: &str) -> Option<Agent> {
         "letta" | "letta-code" | "letta code" => Some(Agent::Letta),
         "maki" => Some(Agent::Maki),
         "muse" | "muse-code" | "muse-cli" => Some(Agent::Muse),
+        "codebuddy" | "codebuddy-code" | "cbc" => Some(Agent::Codebuddy),
         _ if is_muse_versioned_binary(name) => Some(Agent::Muse),
         _ => None,
     }
@@ -402,7 +408,7 @@ fn normalized_process_name(process: &crate::platform::ForegroundProcess) -> Stri
             {
                 if matches!(
                     identify_agent(&wrapped_agent),
-                    Some(Agent::Qwen | Agent::Cline | Agent::Letta)
+                    Some(Agent::Qwen | Agent::Cline | Agent::Letta | Agent::Codebuddy)
                 ) {
                     return wrapped_agent;
                 }
@@ -1019,6 +1025,10 @@ mod tests {
             identify_agent(r"C:\Users\user\muse-bin-0.2.1-R1215.1.exe"),
             Some(Agent::Muse)
         );
+        assert_eq!(identify_agent("codebuddy"), Some(Agent::Codebuddy));
+        assert_eq!(identify_agent("codebuddy-code"), Some(Agent::Codebuddy));
+        assert_eq!(identify_agent("cbc"), Some(Agent::Codebuddy));
+        assert_eq!(identify_agent("/home/user/bin/cbc"), Some(Agent::Codebuddy));
     }
 
     #[test]
@@ -1092,6 +1102,7 @@ mod tests {
             (Agent::Letta, "letta"),
             (Agent::Maki, "maki"),
             (Agent::Muse, "muse"),
+            (Agent::Codebuddy, "cbc"),
         ];
         assert_eq!(expected.len(), Agent::ALL.len());
         for (agent, executable) in expected {
@@ -1866,6 +1877,23 @@ mod tests {
         assert_eq!(
             wrapped_agent_name_from_runtime_argv("bash", Some(&["bash".into(), "-lc".into()])),
             None
+        );
+    }
+
+    #[test]
+    fn identify_agent_in_job_recognizes_node_wrapped_codebuddy() {
+        let job = crate::platform::ForegroundJob {
+            process_group_id: 1,
+            processes: vec![foreground_process(
+                1,
+                "MainThread",
+                &["node", "/home/user/.nvm/versions/node/v24.16.0/bin/cbc"],
+            )],
+        };
+
+        assert_eq!(
+            identify_agent_in_job(&job).map(|(agent, _)| agent),
+            Some(Agent::Codebuddy)
         );
     }
 

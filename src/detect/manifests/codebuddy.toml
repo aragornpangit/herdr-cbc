@@ -1,0 +1,58 @@
+id = "codebuddy"
+version = "2026.10.22.1"
+min_engine_version = 2
+updated_at = "2026-10-22T00:00:00Z"
+aliases = ["codebuddy-code", "cbc"]
+
+# Screen evidence captured from CodeBuddy Code v2.172.1 inside Herdr on 2026-10-22
+# (deepseek-v4.1-flash, 147x31 pane, "auto mode" footer).
+#
+# Working (live turn line above the composer):
+#   ✺ Mixing… (140s · running REPL ·   24 tokens · Task running for a while)
+#     └ Tip: Press Esc once to stop CodeBuddy's reply.
+#   ● REPL · <tool summary>
+#     └ ...running 1s ago → Bash · ...
+# The spinner glyph rotates through the U+2733-U+273A family; the elapsed timer
+# in parentheses separates a live turn line from finished transcript lines.
+#
+# Idle (composer between two rules):
+#   ─────────────
+#   > <draft>
+#   ─────────────
+#   [Deepseek-V4.1-Flash] dmt | master | tok 165K in / 555 out | ctx 28K/1.0M(2%) |
+#   ⏵⏵ auto mode on (shift+Tab to cycle)  ← for agents
+#
+# Blocked (tool permission dialog):
+#   ╭─ Confirm ─...
+#   │ Are you sure you want to do this?
+#   │ > 1. Yes
+#   │   2. Yes, and don't ask again this session (shift + tab)
+#   │   3. No, and tell CodeBuddy what to do differently (escape)
+
+[[rules]]
+id = "permission_dialog_blocked"
+state = "blocked"
+priority = 980
+region = "bottom_non_empty_lines(14)"
+visible_blocker = true
+contains = ["Are you sure you want to do this?"]
+
+[[rules]]
+id = "working_live_turn"
+state = "working"
+priority = 970
+region = "bottom_non_empty_lines(12)"
+visible_working = true
+any = [
+  { line_regex = ['^\s*[✳✴✵✶✷✸✹✺●⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s+\S.*\(\d+[smh]\b'] },
+  { line_regex = ['^\s*[✳✴✵✶✷✸✹✺●⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s+\S.*\brunning\s+\w'] },
+  { contains = ["Task running for a while"] },
+]
+
+[[rules]]
+id = "prompt_box_idle"
+state = "idle"
+priority = 950
+region = "prompt_box_body"
+visible_idle = true
+line_regex = ['^\s*>']
